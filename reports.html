@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reports - Expense Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="dashboard.html"><i class="fa-solid fa-wallet text-warning me-2"></i>ExpenseTracker</a>
+        <div class="d-flex align-items-center">
+            <span class="text-light me-3" id="welcomeUser"></span>
+            <button onclick="logoutUser()" class="btn btn-outline-danger btn-sm">Logout</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar Navigation -->
+        <div class="col-md-3 col-lg-2 sidebar collapse d-md-block p-0">
+            <ul class="nav flex-column pt-3">
+                <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fa-solid fa-chart-line me-2"></i> Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="transactions.html"><i class="fa-solid fa-list-check me-2"></i> Transactions</a></li>
+                <li class="nav-item"><a class="nav-link active" href="reports.html"><i class="fa-solid fa-file-invoice-dollar me-2"></i> Reports</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Body -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            <h2 class="fw-bold mb-4">Monthly Financial Reports</h2>
+
+            <!-- Filter Controls -->
+            <div class="card border-0 shadow-sm p-3 mb-4">
+                <div class="row g-2 align-items-center">
+                    <div class="col-auto">
+                        <label class="form-label mb-0 fw-semibold">Select Month:</label>
+                    </div>
+                    <div class="col-auto">
+                        <select id="monthSelect" class="form-select" onchange="renderReport()"></select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards for Selected Month -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card p-3 border-0 shadow-sm bg-light">
+                        <span class="text-muted fw-semibold">Monthly Income</span>
+                        <h3 class="text-success mb-0" id="mIncome">₹0.00</h3>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-3 border-0 shadow-sm bg-light">
+                        <span class="text-muted fw-semibold">Monthly Expense</span>
+                        <h3 class="text-danger mb-0" id="mExpense">₹0.00</h3>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card p-3 border-0 shadow-sm bg-light">
+                        <span class="text-muted fw-semibold">Net Savings</span>
+                        <h3 class="text-primary mb-0" id="mBalance">₹0.00</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Summary Table -->
+            <div class="card border-0 shadow-sm p-4">
+                <h5 class="fw-bold mb-3">Category Expense Breakdown</h5>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Total Spent</th>
+                                <th>Percentage of Expense</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/app.js"></script>
+<script>
+    checkAuth();
+    const user = getCurrentUser();
+    document.getElementById('welcomeUser').innerText = `Welcome, ${user.name}`;
+
+    // Populate Month Dropdown Automatically
+    function populateMonths() {
+        const select = document.getElementById('monthSelect');
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const currentMonth = new Date().getMonth();
+
+        select.innerHTML = months.map((m, idx) => `
+            <option value="${idx}" ${idx === currentMonth ? 'selected' : ''}>${m} ${new Date().getFullYear()}</option>
+        `).join('');
+    }
+
+    // Render Financial Calculations
+    function renderReport() {
+        const selectedMonth = parseInt(document.getElementById('monthSelect').value);
+        const currentYear = new Date().getFullYear();
+        const txs = getUserTransactions();
+
+        let monthIncome = 0;
+        let monthExpense = 0;
+        const catMap = {};
+
+        txs.forEach(t => {
+            const tDate = new Date(t.date);
+            if (tDate.getMonth() === selectedMonth && tDate.getFullYear() === currentYear) {
+                if (t.type === 'Income') {
+                    monthIncome += t.amount;
+                } else if (t.type === 'Expense') {
+                    monthExpense += t.amount;
+                    catMap[t.categoryName] = (catMap[t.categoryName] || 0) + t.amount;
+                }
+            }
+        });
+
+        // Update Cards
+        document.getElementById('mIncome').innerText = `₹${monthIncome.toFixed(2)}`;
+        document.getElementById('mExpense').innerText = `₹${monthExpense.toFixed(2)}`;
+        const net = monthIncome - monthExpense;
+        const balElem = document.getElementById('mBalance');
+        balElem.innerText = `₹${net.toFixed(2)}`;
+        balElem.className = net >= 0 ? "text-primary mb-0" : "text-danger mb-0";
+
+        // Update Table
+        const tbody = document.getElementById('reportTableBody');
+        const categories = Object.keys(catMap);
+
+        if (categories.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted">No expenses recorded for this month.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = categories.map(cat => {
+            const amount = catMap[cat];
+            const pct = monthExpense > 0 ? ((amount / monthExpense) * 100).toFixed(1) : 0;
+            return `
+                <tr>
+                    <td class="fw-bold">${cat}</td>
+                    <td class="fw-bold text-danger">₹${amount.toFixed(2)}</td>
+                    <td>
+                        <div class="progress" style="height: 18px;">
+                            <div class="progress-bar bg-danger" style="width: ${pct}%;">${pct}%</div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    populateMonths();
+    renderReport();
+</script>
+</body>
+</html>
