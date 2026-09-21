@@ -35,17 +35,25 @@
 </div>
 
 <script src="js/auth.js"></script>
-<script>
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
+<script type="module">
+    import { auth, signInWithEmailAndPassword } from "./js/firebase-config.js";
+
+    const loginForm = document.getElementById('loginForm');
+    const alertBox = document.getElementById('alertBox');
+
+    loginForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        const res = loginUser(
-            document.getElementById('email').value,
-            document.getElementById('password').value
-        );
-        if(res.success) {
+        alertBox.innerHTML = '';
+
+        const email = document.getElementById('email').value.trim();
+        const pass = document.getElementById('password').value;
+
+        try {
+            // Authenticate with Firebase
+            await signInWithEmailAndPassword(auth, email, pass);
             window.location.href = 'dashboard.html';
-        } else {
-            document.getElementById('alertBox').innerHTML = `<div class="alert alert-danger">${res.message}</div>`;
+        } catch (error) {
+            alertBox.innerHTML = `<div class="alert alert-danger">Invalid email or password. (${error.code})</div>`;
         }
     });
 </script>
