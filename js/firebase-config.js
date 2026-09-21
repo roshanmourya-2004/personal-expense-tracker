@@ -22,12 +22,13 @@ import {
 
 // YOUR FIREBASE CONFIGURATION COPIED FROM STEP 2
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+   apiKey: "AIzaSyAA5ctdE72umRUbLHAbOYMi0FYgY80bax4",
+  authDomain: "personal-expense-tracker-dfb68.firebaseapp.com",
+  projectId: "personal-expense-tracker-dfb68",
+  storageBucket: "personal-expense-tracker-dfb68.firebasestorage.app",
+  messagingSenderId: "1089392482303",
+  appId: "1:1089392482303:web:b1afb9a237b12b986f39ca",
+  measurementId: "G-P2GSBDE8ZJ"
 };
 
 // Initialize Firebase App
