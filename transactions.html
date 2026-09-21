@@ -11,7 +11,7 @@
 <nav class="navbar navbar-dark bg-dark">
     <div class="container-fluid">
         <a class="navbar-brand fw-bold" href="dashboard.html"><i class="fa-solid fa-wallet text-warning me-2"></i>ExpenseTracker</a>
-        <button onclick="handleLogout()" class="btn btn-outline-danger btn-sm">Logout</button>
+        <button id="logoutBtn" class="btn btn-outline-danger btn-sm">Logout</button>
     </div>
 </nav>
 
@@ -145,17 +145,16 @@
         } else {
             currentUser = user;
             populateCategoryDropdown();
-            // Set default date to today
             document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
             await loadTransactions();
         }
     });
 
-    // Logout
-    window.handleLogout = async function() {
+    // Logout Handler
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
         await signOut(auth);
         window.location.href = 'login.html';
-    };
+    });
 
     function populateCategoryDropdown() {
         const type = document.getElementById('txType').value;
@@ -163,6 +162,16 @@
         document.getElementById('txCategory').innerHTML = cats.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
     }
     document.getElementById('txType').addEventListener('change', populateCategoryDropdown);
+
+    // Reset Form when Modal opens
+    const txModal = document.getElementById('txModal');
+    txModal.addEventListener('show.bs.modal', () => {
+        document.getElementById('txForm').reset();
+        document.getElementById('modalAlert').innerHTML = '';
+        document.getElementById('txType').value = 'Expense';
+        document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
+        populateCategoryDropdown();
+    });
 
     // Fetch from Firestore
     async function loadTransactions() {
@@ -237,14 +246,9 @@
             });
 
             // Safe Bootstrap Modal dismissal
-            const modalEl = document.getElementById('txModal');
-            const modalInstance = bootstrap.Modal.getOrCreateInstance(modalEl);
+            const modalInstance = bootstrap.Modal.getOrCreateInstance(txModal);
             modalInstance.hide();
 
-            document.getElementById('txForm').reset();
-            document.getElementById('txDate').value = new Date().toISOString().split('T')[0];
-            populateCategoryDropdown();
-            
             await loadTransactions();
         } catch (error) {
             console.error("Firestore Save Error:", error);
@@ -255,7 +259,7 @@
         }
     });
 
-    // Delete Transaction
+    // Delete Transaction (attached to window for inline onclick in table rows)
     window.deleteTx = async function(docId) {
         if (confirm("Delete this transaction from Cloud Firestore?")) {
             try {
@@ -267,7 +271,7 @@
         }
     };
 
-    // Table Filters
+    // Filter Logic
     function applyFilters() {
         const search = document.getElementById('searchFilter').value.toLowerCase();
         const type = document.getElementById('typeFilter').value;
